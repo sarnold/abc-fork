@@ -1,12 +1,12 @@
+# ABC: System for Sequential Logic Synthesis and Formal Verification
+
+ABC is always changing but the current snapshot is believed to be stable. 
+
 [![ci](https://github.com/sarnold/abc/actions/workflows/ci.yml/badge.svg)](https://github.com/sarnold/abc/actions/workflows/ci.yml)
 [![msystem](https://github.com/sarnold/abc/actions/workflows/win.yml/badge.svg)](https://github.com/sarnold/abc/actions/workflows/win.yml)
 
 [![Build Status](https://travis-ci.org/berkeley-abc/abc.svg?branch=master)](https://travis-ci.org/berkeley-abc/abc)
 [![Build status](https://ci.appveyor.com/api/projects/status/7q8gopidgvyos00d?svg=true)](https://ci.appveyor.com/project/berkeley-abc/abc)
-
-# ABC: System for Sequential Logic Synthesis and Formal Verification
-
-ABC is always changing but the current snapshot is believed to be stable. 
 
 ## Compiling:
 
