@@ -1,12 +1,12 @@
 on:
   workflow_dispatch:
-  #push:
+  push:
 
 jobs:
 
   build-windows:
 
-    runs-on: windows-latest
+    runs-on: windows-2019
 
     steps:
 
