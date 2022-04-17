@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - master
+      - develop
     paths-ignore:
       - '**.md'
       - '**.rst'
@@ -41,13 +42,13 @@ jobs:
           - name: ubuntu-20.04-gcc
             os: ubuntu-20.04
             compiler: gcc
-            version: "10"
+            version: "11"
             toxcmd: build
 
           - name: ubuntu-20.04-clang
             os: ubuntu-20.04
             compiler: clang
-            version: "10"
+            version: "12"
             toxcmd: clang
 
           - name: ubuntu-18.04-gcc
