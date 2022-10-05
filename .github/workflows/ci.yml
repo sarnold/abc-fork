@@ -29,7 +29,7 @@ jobs:
           windows-2019-cl,
           ubuntu-20.04-gcc,
           ubuntu-20.04-clang,
-          ubuntu-18.04-gcc,
+          ubuntu-22.04-clang,
           macOS-10.15-gcc,
           macOS-10.15-clang,
         ]
@@ -43,19 +43,19 @@ jobs:
             os: ubuntu-20.04
             compiler: gcc
             version: "11"
-            toxcmd: build
+            toxcmd: soname,tests
 
           - name: ubuntu-20.04-clang
             os: ubuntu-20.04
             compiler: clang
-            version: "12"
+            version: "10"
             toxcmd: clang
 
-          - name: ubuntu-18.04-gcc
-            os: ubuntu-18.04
-            compiler: gcc
-            version: "9"
-            toxcmd: soname,tests
+          - name: ubuntu-22.04-clang
+            os: ubuntu-22.04
+            compiler: clang
+            version: "12"
+            toxcmd: build
 
           - name: macOS-10.15-gcc
             os: macOS-10.15
@@ -96,7 +96,7 @@ jobs:
           echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
           echo "CXX=g++-${{ matrix.version }}" >> $GITHUB_ENV
         else
-          sudo apt-get install -y clang-${{ matrix.version }} lld-${{ matrix.version }} g++-multilib
+          sudo apt-get install -y clang-${{ matrix.version }} llvm-${{ matrix.version }} lld-${{ matrix.version }} g++-multilib
           echo "CC=clang-${{ matrix.version }}" >> $GITHUB_ENV
           echo "CXX=clang++-${{ matrix.version }}" >> $GITHUB_ENV
         fi
@@ -106,6 +106,7 @@ jobs:
       env:
         CC: ${{ env.CC }}
         CXX: ${{ env.CXX }}
+        PREFIX: ../staging
       run: |
         tox -e ${{ matrix.toxcmd }}
 
@@ -146,14 +147,18 @@ jobs:
         -DABC_USE_NO_PTHREADS=ON
         -DABC_USE_NO_READLINE=ON
         -DCMAKE_BUILD_TYPE=Release
+        -DCMAKE_INSTALL_PREFIX=${{ env.PREFIX }}
       env:
         CC: cl
         CXX: cl
+        PREFIX: staging
 
     - name: Build Windows
       if: runner.os == 'Windows'
-      run: cmake --build build --config Release -j 2
+      run: cmake --build build --config Release -j 2 --target install
 
     - name: Test Windows
       if: runner.os == 'Windows'
-      run: ctest -V -C Release --test-dir build/
+      run: |
+        ctest -V -C Release --test-dir build/
+        ls -lh staging/ || true
