@@ -69,5 +69,5 @@ jobs:
     - name: Upload package artifact
       uses: actions/upload-artifact@v1
       with:
-        name: package
+        name: package-${{ matrix.os }}-${{ matrix.use_namespace }}
         path: staging/
