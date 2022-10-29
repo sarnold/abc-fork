@@ -1,0 +1,19 @@
+abc_libabc_add_sources(
+    NAME misc_zlib
+    SOURCES
+        deflate.c
+        compress_.c
+        inflate.c
+        uncompr.c
+        gzclose.c
+        gzread.c
+        inftrees.c
+        inffast.c
+        crc32.c
+        adler32.c
+        gzwrite.c
+        zutil.c
+        trees.c
+        gzlib.c
+        infback.c
+)
