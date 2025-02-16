@@ -1,12 +1,62 @@
-cmake_minimum_required(VERSION 3.5.0)
+cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
 
-include(CMakeParseArguments)
-include(CheckCCompilerFlag)
-include(CheckCXXCompilerFlag)
+# with at least one base tag, this can have dynamic (git) versioning:
+#  git describe last tag = 1.1.0
+#  git describe last tag + rev count = 1.1.0.45
+#
+# for now, set -DSCM_VERSION_INFO in the build env to override
+if(NOT SCM_VERSION_INFO)
+    set(LIBRARY_VERSION 1.1.0)
+    set(SCM_VERSION_INFO ${LIBRARY_VERSION})
+endif()
+set(LIBRARY_SOVERSION 1)
+
+project(
+    abc
+    LANGUAGES C CXX
+    VERSION ${SCM_VERSION_INFO}
+)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 
 # Default c++ standard used unless otherwise specified in target_compile_features.
 set(CMAKE_CXX_STANDARD 17 CACHE STRING "the C++ standard to use for this project")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL Clang)
+    set(CLANG_DEFAULT_CXX_STDLIB libc++)
+    set(CLANG_DEFAULT_RTLIB compiler-rt)
+endif()
+
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE
+        "RelWithDebInfo"
+        CACHE STRING "Default build type: RelWithDebInfo" FORCE
+    )
+endif()
+
+include(CMakeParseArguments)
+include(CheckCCompilerFlag)
+include(CheckCXXCompilerFlag)
+include(GNUInstallDirs)
+
+# LTO requires cmake min version 3.9 and clang LTO requires lld
+if(ABC_ENABLE_LTO AND CMAKE_BUILD_TYPE MATCHES "Release")
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        find_package(LLVM CONFIG)
+    endif()
+
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT ipo_supported OUTPUT error)
+
+    if(ipo_supported)
+        message(STATUS "IPO / LTO supported")
+        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+    else()
+        message(WARNING "IPO / LTO not supported: <${error}>")
+    endif()
+endif()
 
 function(addprefix var prefix)
     foreach( s ${ARGN} )
@@ -87,13 +137,32 @@ extract_var(SEPARATOR_LIBS ABC_LIBS ${MAKE_OUTPUT})
 extract_var(SEPARATOR_CFLAGS ABC_CFLAGS ${MAKE_OUTPUT})
 extract_var(SEPARATOR_CXXFLAGS ABC_CXXFLAGS ${MAKE_OUTPUT})
 
+set(ABC_HEADERS
+    src/base/main/abcapis_old.h
+    src/base/main/abcapis.h
+)
+
+string(REPLACE "src/" "${CMAKE_CURRENT_SOURCE_DIR}/src/" ABC_HEADERS
+               "${ABC_HEADERS}"
+)
+
+# Cache variable so this can be used in parent projects
+set(abc_INCLUDE_DIR
+    "${CMAKE_CURRENT_LIST_DIR}/src"
+    CACHE INTERNAL "Directory where common headers are located"
+)
+
 if(ABC_USE_NAMESPACE)
-    set_source_files_properties(${ABC_SRC} PROPERTIES LANGUAGE CXX)
+    set_source_files_properties(${ABC_SRC} PROPERTIES LANGUAGE CXX)  # generates deprecation warnings
 endif()
 
 function(abc_properties target visibility)
-    target_include_directories(${target} ${visibility} ${CMAKE_CURRENT_SOURCE_DIR}/src )
+    target_include_directories(
+        ${target} ${visibility} $<BUILD_INTERFACE:${abc_INCLUDE_DIR}>
+                                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    )
     target_compile_options_filtered(${target} ${visibility} ${ABC_CFLAGS} ${ABC_CXXFLAGS} -Wno-unused-but-set-variable )
+    target_compile_options(${target} ${visibility} $<$<COMPILE_LANG_AND_ID:CXX,AppleClang,Clang>:-x c++>)  # silence deprecation warnings
     target_link_libraries(${target} ${visibility} ${ABC_LIBS})
 endfunction()
 
@@ -112,6 +181,46 @@ add_library(libabc-pic EXCLUDE_FROM_ALL ${ABC_SRC})
 abc_properties(libabc-pic PUBLIC)
 set_property(TARGET libabc-pic PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_property(TARGET libabc-pic PROPERTY OUTPUT_NAME abc-pic)
+
+if(BUILD_SHARED_LIBS)
+    if(ABC_USE_SONAME)
+        set_target_properties(
+            libabc PROPERTIES VERSION ${LIBRARY_VERSION}
+                              SOVERSION ${LIBRARY_SOVERSION}
+                              WINDOWS_EXPORT_ALL_SYMBOLS TRUE
+        )
+    endif()
+endif()
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    if(ABC_ENABLE_LTO AND ipo_supported)
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=lld")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=lld")
+    endif()
+endif()
+
+install(FILES ${ABC_HEADERS}
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/abc
+)
+
+install(
+    TARGETS libabc abc
+    EXPORT abcConfig
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+install(EXPORT abcConfig
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/abc NAMESPACE abc::)
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    if(BUILD_SHARED_LIBS)
+        install(FILES $<TARGET_PDB_FILE:libabc> DESTINATION bin OPTIONAL)
+    endif()
+endif()
 
 if(NOT DEFINED ABC_SKIP_TESTS)
     enable_testing()

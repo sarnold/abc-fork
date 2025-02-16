@@ -47,6 +47,7 @@ src/python/bdist
 src/python/pyabc.py
 src/python/pyabc_wrap.*
 
+.tox/
 .idea/
 build/
 
