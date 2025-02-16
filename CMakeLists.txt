@@ -86,17 +86,6 @@ endfunction()
 
 project(abc)
 
-if(READLINE_FOUND MATCHES TRUE)
-    addprefix(ABC_READLINE_INCLUDES_FLAGS "-I" ${READLINE_INCLUDE})
-    string(REPLACE ";" " " ABC_READLINE_INCLUDES_FLAGS "${ABC_READLINE_INCLUDES_FLAGS}")
-    list(APPEND ABC_READLINE_FLAGS "ABC_READLINE_INCLUDES=${ABC_READLINE_INCLUDES_FLAGS}")
-
-    string(REPLACE ";" " " ABC_READLINE_LIBRARIES_FLAGS "${READLINE_LIBRARIES}")
-    list(APPEND ABC_READLINE_FLAGS "ABC_READLINE_LIBRARIES=${ABC_READLINE_LIBRARIES_FLAGS}")
-elseif(READLINE_FOUND MATCHES FALSE)
-    list(APPEND ABC_READLINE_FLAGS "ABC_USE_NO_READLINE=1")
-endif()
-
 if(ABC_USE_NAMESPACE)
     set(ABC_USE_NAMESPACE_FLAGS "ABC_USE_NAMESPACE=${ABC_USE_NAMESPACE}")
 endif()
@@ -165,6 +154,29 @@ function(abc_properties target visibility)
     target_compile_options(${target} ${visibility} $<$<COMPILE_LANG_AND_ID:CXX,AppleClang,Clang>:-x c++>)  # silence deprecation warnings
     target_link_libraries(${target} ${visibility} ${ABC_LIBS})
 
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+        target_compile_options(${target}
+            ${visibility}
+                -Wall -Wno-unused-function -Wno-write-strings -Wno-sign-compare -Wno-deprecated
+        )
+        target_link_libraries(${target} ${visibility} m)
+        if(WIN32 OR ABC_USE_NAMESPACE)
+            target_compile_options(${target}
+                ${visibility}
+                    $<$<COMPILE_LANGUAGE:CXX>:-fvisibility=hidden>
+            )
+        endif()
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        target_compile_definitions(${target}
+            ${visibility}
+                "_CONSOLE"
+                "_MBCS"
+                "_SCL_SECURE_NO_WARNINGS"
+                "_CRT_SECURE_NO_WARNINGS"
+                "_XKEYCHECK_H"
+        )
+    endif()
+
     if(WIN32)
         if(MINGW OR MSYS)
             add_definitions(-DWIN32 -D__MINGW32__ -DHAVE_STRUCT_TIMESPEC)
@@ -172,6 +184,42 @@ function(abc_properties target visibility)
                 include_directories($ENV{CONDA_PREFIX}/Library/include)
             endif()
         endif()
+        target_compile_definitions(${target}
+            ${visibility}
+                $<$<BOOL:${ABC_USE_NO_PTHREADS}>:HAVE_STRUCT_TIMESPEC>
+                $<$<BOOL:${BUILD_SHARED_LIBS}>:ABC_DLL=ABC_DLLEXPORT>
+                $<$<NOT:$<BOOL:${BUILD_SHARED_LIBS}>>:WIN32_NO_DLL>
+                $<$<NOT:$<BOOL:${BUILD_SHARED_LIBS}>>:ABC_NO_DYNAMIC_LINKING>
+        )
+        target_link_libraries(${target} ${visibility} shlwapi)
+    endif()
+
+    if(ABC_USE_LIBSTDCXX OR NOT ABC_USE_NAMESPACE)
+        if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+            message(STATUS "Using explicit -lstdc++")
+            target_link_libraries(${target} ${visibility} stdc++)
+        endif()
+    endif()
+
+    if(NOT ABC_USE_NO_READLINE)
+        message(STATUS "Using libreadline")
+        target_compile_definitions(${target} ${visibility} ABC_USE_READLINE)
+        find_path(ABC_READLINE_INCLUDES
+            NAMES readline.h
+            HINTS
+                $ENV{READLINE_ROOT}
+            PATH_SUFFIXES include include/readline
+        )
+        find_library(ABC_READLINE_LIBRARIES
+            NAMES readline libreadline
+            HINTS
+                $ENV{READLINE_ROOT}
+        )
+        if(NOT ABC_READLINE_INCLUDES OR NOT ABC_READLINE_LIBRARIES)
+            message(FATAL_ERROR "Could not find readline")
+        endif()
+        target_include_directories(${target} ${visibility} ${ABC_READLINE_INCLUDES})
+        target_link_libraries(${target} ${visibility} ${ABC_READLINE_LIBRARIES})
     endif()
 endfunction()
 
