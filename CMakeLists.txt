@@ -164,6 +164,15 @@ function(abc_properties target visibility)
     target_compile_options_filtered(${target} ${visibility} ${ABC_CFLAGS} ${ABC_CXXFLAGS} -Wno-unused-but-set-variable )
     target_compile_options(${target} ${visibility} $<$<COMPILE_LANG_AND_ID:CXX,AppleClang,Clang>:-x c++>)  # silence deprecation warnings
     target_link_libraries(${target} ${visibility} ${ABC_LIBS})
+
+    if(WIN32)
+        if(MINGW OR MSYS)
+            add_definitions(-DWIN32 -D__MINGW32__ -DHAVE_STRUCT_TIMESPEC)
+            if(DEFINED ENV{CONDA_PREFIX})
+                include_directories($ENV{CONDA_PREFIX}/Library/include)
+            endif()
+        endif()
+    endif()
 endfunction()
 
 set(ABC_MAIN_SRC src/base/main/main.c)
