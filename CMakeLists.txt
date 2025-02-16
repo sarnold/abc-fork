@@ -29,6 +29,18 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL Clang)
     set(CLANG_DEFAULT_RTLIB compiler-rt)
 endif()
 
+set(ABC_USE_NAMESPACE "" CACHE STRING "ABC namespace")
+option(ABC_USE_NO_READLINE "Whether to use libreadline")
+option(ABC_USE_NO_PTHREADS "Whether to compile with pthread support")
+
+#if(NOT ABC_USE_NO_READLINE)
+    #message(STATUS "Using libreadline")
+    #add_definitions(-DABC_USE_READLINE)
+#endif()
+
+# something pathological lives here
+#remove_definitions(-DABC_USE_READLINE)
+
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE
         "RelWithDebInfo"
@@ -83,8 +95,6 @@ function(target_compile_options_filtered target visibility)
         endif()
     endforeach()
 endfunction()
-
-project(abc)
 
 if(ABC_USE_NAMESPACE)
     set(ABC_USE_NAMESPACE_FLAGS "ABC_USE_NAMESPACE=${ABC_USE_NAMESPACE}")
@@ -202,6 +212,9 @@ function(abc_properties target visibility)
         endif()
     endif()
 
+    #if(ABC_USE_NO_READLINE)
+        #target_compile_options(${target} ${visibility} -UABC_USE_READLINE)
+    #else()
     if(NOT ABC_USE_NO_READLINE)
         message(STATUS "Using libreadline")
         target_compile_definitions(${target} ${visibility} ABC_USE_READLINE)

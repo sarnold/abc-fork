@@ -14,6 +14,7 @@ lib/bip*
 docs/
 .vscode/
 .cache/
+staging/
 
 src/ext*
 src/xxx/
