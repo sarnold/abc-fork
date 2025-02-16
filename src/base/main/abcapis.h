@@ -9,7 +9,7 @@
   Synopsis    [External declarations.]
 
   Author      [Alan Mishchenko]
-  
+
   Affiliation [UC Berkeley]
 
   Date        [Ver. 1.0. Started - September 29, 2012.]
@@ -17,7 +17,7 @@
   Revision    [$Id: abcapis.h,v 1.00 2012/09/29 00:00:00 alanmi Exp $]
 
 ***********************************************************************/
- 
+
 #ifndef MINI_AIG__abc_apis_h
 #define MINI_AIG__abc_apis_h
 
@@ -34,6 +34,7 @@
 ////////////////////////////////////////////////////////////////////////
 
 ABC_NAMESPACE_HEADER_START
+#pragma GCC visibility push(default)
 
 typedef struct Abc_Frame_t_      Abc_Frame_t;
 
@@ -100,12 +101,12 @@ extern ABC_DLL void   Abc_NtkSetAndGateDelay( Abc_Frame_t * pAbc, float Delay );
 // procedures to return the mapped network
 extern ABC_DLL int *  Abc_NtkOutputMiniMapping( Abc_Frame_t * pAbc );
 extern ABC_DLL void   Abc_NtkPrintMiniMapping( int * pArray );
-extern ABC_DLL int *  Abc_FrameReadArrayMapping( Abc_Frame_t * pAbc );              
+extern ABC_DLL int *  Abc_FrameReadArrayMapping( Abc_Frame_t * pAbc );
 extern ABC_DLL int *  Abc_FrameReadBoxes( Abc_Frame_t * pAbc );
 
 // procedures to access verifization status and a counter-example
-extern ABC_DLL int    Abc_FrameReadProbStatus( Abc_Frame_t * pAbc );   
-extern ABC_DLL void * Abc_FrameReadCex( Abc_Frame_t * pAbc );    
+extern ABC_DLL int    Abc_FrameReadProbStatus( Abc_Frame_t * pAbc );
+extern ABC_DLL void * Abc_FrameReadCex( Abc_Frame_t * pAbc );
 
 // procedure to set retiming data
 extern ABC_DLL void   Abc_FrameSetRetimingData( Abc_Frame_t * pAbc, int * pRst, int * pSet, int * pEna, int nRegs );
@@ -113,6 +114,7 @@ extern ABC_DLL void   Abc_FrameSetRetimingData( Abc_Frame_t * pAbc, int * pRst, 
 // procedure to return sequential equivalences
 extern ABC_DLL int *  Abc_FrameReadMiniAigEquivClasses( Abc_Frame_t * pAbc );
 
+#pragma GCC visibility pop
 ABC_NAMESPACE_HEADER_END
 
 #endif

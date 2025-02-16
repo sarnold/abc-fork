@@ -62,7 +62,7 @@ jobs:
         auto-activate-base: true
         activate-environment: ''
         channels: conda-forge,defaults
-        channel-priority: flexible
+        channel-priority: strict
         conda-remove-defaults: true
 
     - name: Configure condadev environment

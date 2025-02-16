@@ -60,7 +60,7 @@ jobs:
           - name: macOS-13-gcc
             os: macOS-13
             compiler: gcc
-            version: "12"
+            version: "13"
             toxcmd: abc
 
           - name: macOS-14-clang
@@ -147,9 +147,8 @@ jobs:
       if: runner.os == 'Windows'
       run: >
         cmake -S . -B build
-        -DBUILD_SHARED_LIBS=ON
-        -DABC_USE_NO_PTHREADS=ON
         -DABC_USE_NO_READLINE=ON
+        -DBUILD_SHARED_LIBS=ON
         -DCMAKE_BUILD_TYPE=Release
         -DCMAKE_INSTALL_PREFIX=${{ env.PREFIX }}
       env:
