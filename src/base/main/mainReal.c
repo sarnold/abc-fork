@@ -60,7 +60,7 @@ SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 #include "base/wlc/wlc.h"
 
 ABC_NAMESPACE_IMPL_START
-
+#pragma GCC visibility push(default)
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -423,4 +423,5 @@ static int TypeCheck( Abc_Frame_t * pAbc, const char * s )
 ////////////////////////////////////////////////////////////////////////
 
 
+#pragma GCC visibility pop
 ABC_NAMESPACE_IMPL_END
